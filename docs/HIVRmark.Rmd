@@ -1,0 +1,158 @@
+---
+title: "HIV/AIDS Death Rate from 1990 to 2017"
+author: "Catherine Keating"
+date: "7/17/2020"
+output: html_document
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Comparing HIV/AIDS Death Rates per 100,000 People from 1990 through 2017
+### Looking at changes in each country to see the increase or decrease in death rate through time.
+
+## Research Question
+How has the death rates of HIV/AIDS changed throughout time?
+
+HIV/AIDS is a deadly disease that was first reported in 1981 and quickly developed into a pandemic. At the time that the pandemic began, medicine of the time was of no use and the disease developed into a political problem which curbed aid to those impacted. The disease has been rigorously studied and medicines have been created to help those with HIV to prevent them from developing AIDS. Continued research brings us one step closer to curing or preventing HIV/AIDS however, there are still large amounts of deaths due to the virus, especially in countries that do not have preventative measures against HIV/AIDS. This has been and continues to be a large discrepancy between countries' death rates mostly due to economic and/or social differences.
+
+## Preface for the Code
+In this document I will:
+
+1. Load data from the [Our World in Data] https://ourworldindata.org/grapher/hiv-death-rates
+2. Take the csv given on the site
+3. Modify the database to work with just countries and not regions
+4. Provide visualizations of death rates in each country about every 10 years
+5. Provide a visualization of the death rates in each country for each year (1990-2017)
+6. Discuss the data and summarize findings
+
+## Loading Necessary Libraries
+```{r, message=FALSE}
+library(dplyr)
+library(ggplot2)
+library(maptools)
+library(readr)
+library(countrycode)
+library(viridisLite)
+```
+
+## Loading Necessary Data
+CSV data frame and world map data are read in. Antarctica is filtered out as there are no cases and it does not need to be shown on the map.
+```{r, message=FALSE}
+# Reads in CSV data
+hiv_death_rates <- read_csv("hiv-death-rates.csv")
+
+#Reads in the world map
+world_map <- map_data('world')
+world_map <- filter(world_map, region != 'Antarctica')
+```
+
+## Filtering out Unecessary Regional Data
+The data frame had data for almost every country but also had data for regions. These regions would mess with the data for each country and, therefore, were taken out using a filter.
+```{r, message=FALSE}
+# removes zones that cannot be read as a country on map
+To_be_removed <-
+  c(
+    'World',
+    'Western Sub-Saharan Africa',
+    'Western Europe',
+    'Tropical Latin America',
+    'Sub-Saharan Africa',
+    'Southern Sub-Saharan Africa',
+    'Southern Latin America',
+    'Southeast Asia, East Asia, and Oceania',
+    'Southeast Asia',
+    'South Asia',
+    'North America',
+    'North Africa and Middle East',
+    'Middle SDI',
+    'Low-middle SDI',
+    'Low SDI',
+    'Latin America and Caribbean',
+    'High-middle SDI',
+    'High-income Asia Pacific',
+    'High-income',
+    'High SDI',
+    'Eastern Sub-Saharan Africa',
+    'Eastern Europe',
+    'East Asia',
+    'Central Sub-Saharan Africa',
+    'Central Latin America',
+    'Central Europe, Eastern Europe, and Central Asia',
+    'Central Europe',
+    'Central Asia',
+    'Andean Latin America'
+  )
+countries <- filter(hiv_death_rates,!Entity %in% To_be_removed)
+```
+
+## Work on Country Code and Death Rate Columns
+There was a problem where certain countries' data would not show up as their main name and country code conflicted. This fixed the problem and allowed all data to be read. The death rate column's name was shortened.
+```{r, message=FALSE, warning=FALSE}
+# country code and changes name of rate column
+world_map <-
+  world_map %>% mutate(Code = countrycode(region, origin = 'country.name', destination = 'iso3c'))
+map <- left_join(countries, world_map, by = 'Code') %>%
+  rename(Death_Rate = 4)
+```
+
+## Plotting with a Year Filter
+I plotted the data for the years 1990, 2000, 2010 and 2017. Labels were introduced and the graphic was given a color theme to make it easier to see the death rates. The comparison between these years shows the data's evolution through time. In 1990, the data begins and has lower death rates. The 2000 graph shows the beginning of the death rate's increase. The graph for 2010 shows the decrease in death rate in certain countries and a continued increase in others. Finally, in 2017 the death rates have drastically dropped.
+```{r, message=FALSE}
+# plot with year filter
+plot_1990 <-
+  ggplot(map %>% filter(Year == 1990), aes(x = long, y = lat, group = group)) +
+  geom_polygon(aes(fill = Death_Rate)) +
+  scale_fill_viridis_c(option = 'inferno', direction = -1) +
+  labs(x = 'Longitude', y = 'Latitude') + ggtitle('HIV/AIDS Death Rate per 100,000 people in 1990')
+ggsave("plot_1990.png", dpi = 400)
+plot_1990
+
+# plot with year filter
+plot_2000 <-
+  ggplot(map %>% filter(Year == 2000), aes(x = long, y = lat, group = group)) +
+  geom_polygon(aes(fill = Death_Rate)) +
+  scale_fill_viridis_c(option = 'inferno', direction = -1) +
+  labs(x = 'Longitude', y = 'Latitude') + ggtitle('HIV/AIDS Death Rate per 100,000 people in 2000')
+ggsave("plot_2000.png", dpi = 400)
+plot_2000
+
+# plot with year filter
+plot_2010 <-
+  ggplot(map %>% filter(Year == 2010), aes(x = long, y = lat, group = group)) +
+  geom_polygon(aes(fill = Death_Rate)) +
+  scale_fill_viridis_c(option = 'inferno', direction = -1) +
+  labs(x = 'Longitude', y = 'Latitude') + ggtitle('HIV/AIDS Death Rate per 100,000 people in 2010')
+ggsave("plot_2010.png", dpi = 400)
+plot_2010
+
+# plot with year filter
+plot_2017 <-
+  ggplot(map %>% filter(Year == 2017), aes(x = long, y = lat, group = group)) +
+  geom_polygon(aes(fill = Death_Rate)) +
+  scale_fill_viridis_c(option = 'inferno', direction = -1) +
+  labs(x = 'Longitude', y = 'Latitude') + ggtitle('HIV/AIDS Death Rate per 100,000 people in 2017')
+ggsave("plot_2017.png", dpi = 400)
+plot_2017
+```
+
+## Plotting with a facet_wrap for Year
+I annalyzed the trend of HIV/AIDS death rates by using facet_wrap('Year') so that a graph would be made for each year. The graphs from each year show the death rates for each country depending on the year and can help determine trends that arise. Using this method it is easy to see how a specific country or area was impacted by this disease.
+```{r, message=FALSE}
+# For all years
+plot_every <-
+  ggplot(map, aes(x = long, y = lat, group = group)) +
+  geom_polygon(aes(fill = Death_Rate)) +
+  facet_wrap(~Year) +
+  scale_fill_viridis_c(option = 'inferno', direction = -1) +
+  labs(x = 'Longitude', y = 'Latitude') + ggtitle('HIV/AIDS Death Rate per 100,000 people')
+ggsave("plot_every.png", dpi = 400)
+plot_every
+```
+
+## Results
+The increase in death rate can be seen from 1990 until the early 2000s. The 2000s show a peak in death rates. As time transitions into the 2010s, the death rate begins to decrease in most countries while some countries are abnormally high or increasing. By the later half of the 2010s there seems to be a decrease from all countries. The amount of deaths seem to be decreasing for all countries and hopefully the trend will continue. Though some countries still have large numbers of deaths, the gradual decrease shows improvement.
+
+The most deaths seem to come from central and south African countries. This is mainly due to the difference in social and economic factors from other countries. These factors could have delayed awareness or treatment to help curb the spread of the disease or to prevent deaths due to HIV/AIDS.
+
+## Reference
+Our World in Data [https://ourworldindata.org/grapher/hiv-death-rates]
